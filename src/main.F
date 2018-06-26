@@ -145,6 +145,10 @@ Program FUNWAVE_TVD
      USE METEO_MODULE
 # endif
 
+# if defined (SUBSURFACE)
+         USE SUBSURFACE_MODULE
+# endif
+
      IMPLICIT NONE
 
 !     INTEGER::ISTAGE ! moved to mod_global 09/12/2017
@@ -185,6 +189,20 @@ Program FUNWAVE_TVD
 # if defined (SEDIMENT)
      CALL SEDIMENT_INITIAL
 # endif
+
+# if defined (SUBSURFACE)
+    CALL SUBSURFACE_INITIAL
+
+# if defined (DEBUG)
+#    if defined (PARALLEL)
+       IF(myid==0) WRITE(*,*) 'SUBSURFACE_INITIAL'     
+#    else   
+       WRITE(*,*) 'SUBSURFACE_INITIAL'
+#    endif
+# endif
+
+# endif
+! subsurface
 
 ! time integration
 
@@ -278,6 +296,25 @@ Program FUNWAVE_TVD
      ENDDO
 
      CALL MIXING_STUFF
+
+
+# if defined (SUBSURFACE)
+     CALL UPDATE_SUBSURFACE
+# endif
+
+# if defined (SUBSURFACE)
+     DO J=1,Nloc
+     DO I=1,Mloc
+        IF (MASK(I,J)==0)THEN
+          ETA(I,J) = ETA_ground(I,J)
+        ENDIF
+     ENDDO
+     ENDDO
+
+# if defined (PARALLEL)
+     CALL PHI_EXCH_1(ETA)
+# endif
+# endif
 
 
 !  find maximum eta velocity 
